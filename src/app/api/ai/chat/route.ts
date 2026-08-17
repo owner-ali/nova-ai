@@ -61,7 +61,7 @@ export async function POST(req: Request) {
         role: m.role as "user" | "assistant" | "system",
         content: m.content,
       })),
-      confirmedToolName,
+      confirmedToolName: confirmedToolName ?? undefined,
     });
 
     await prisma.message.create({
