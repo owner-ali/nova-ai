@@ -1,0 +1,58 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-line;
+  }
+  html {
+    scroll-behavior: smooth;
+  }
+  ::selection {
+    @apply bg-nova-green/30 text-white;
+  }
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-base-600;
+  }
+  :focus-visible {
+    outline: 2px solid #3eeba5;
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  .glass {
+    @apply rounded-xl2 border border-line bg-white/[0.03] shadow-glass backdrop-blur-xl;
+  }
+  .glass-hover {
+    @apply transition-colors hover:bg-white/[0.05];
+  }
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-full bg-nova-btn px-5 py-2.5 text-sm font-semibold text-base-950 shadow-glow transition-transform active:scale-95;
+  }
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-full border border-line bg-white/[0.04] px-5 py-2.5 text-sm font-medium text-white/90 transition-colors hover:bg-white/[0.08];
+  }
+  .input-field {
+    @apply w-full rounded-xl border border-line bg-white/[0.03] px-4 py-2.5 text-sm text-white placeholder:text-white/35 outline-none transition-colors focus:border-nova-green/50 focus:bg-white/[0.05];
+  }
+  .label-eyebrow {
+    @apply text-xs font-medium uppercase tracking-[0.14em] text-white/40;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

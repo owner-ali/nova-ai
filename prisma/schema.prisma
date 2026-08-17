@@ -1,0 +1,302 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==========================================================
+// AUTH
+// ==========================================================
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  passwordHash  String?
+  emailVerified DateTime?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // preferences
+  assistantName    String  @default("Nova")
+  responseStyle    String  @default("concise") // concise | detailed | friendly
+  memoryEnabled    Boolean @default(true)
+  voiceEnabled     Boolean @default(true)
+  voiceSpeed       Float   @default(1.0)
+  voiceLanguage    String  @default("en-US")
+  autoSpeak        Boolean @default(true)
+  theme            String  @default("dark")
+
+  accounts      Account[]
+  sessions      Session[]
+
+  conversations   Conversation[]
+  tasks           Task[]
+  reminders       Reminder[]
+  calendarEvents  CalendarEvent[]
+  notes           Note[]
+  memories        Memory[]
+  documents       Document[]
+  focusSessions   FocusSession[]
+  automations     Automation[]
+
+  @@index([email])
+}
+
+// Auth.js required models
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ==========================================================
+// CONVERSATIONS / CHAT
+// ==========================================================
+
+model Conversation {
+  id        String    @id @default(cuid())
+  userId    String
+  title     String    @default("New conversation")
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages Message[]
+
+  @@index([userId])
+}
+
+model Message {
+  id             String   @id @default(cuid())
+  conversationId String
+  role           String // user | assistant | system | tool
+  content        String   @db.Text
+  toolName       String?
+  toolArgs       Json?
+  createdAt      DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+}
+
+// ==========================================================
+// TASKS
+// ==========================================================
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+model Task {
+  id          String       @id @default(cuid())
+  userId      String
+  title       String
+  description String?      @db.Text
+  status      TaskStatus   @default(TODO)
+  priority    TaskPriority @default(MEDIUM)
+  dueDate     DateTime?
+  category    String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, status])
+}
+
+// ==========================================================
+// REMINDERS
+// ==========================================================
+
+enum ReminderStatus {
+  PENDING
+  COMPLETED
+  OVERDUE
+  DISMISSED
+}
+
+model Reminder {
+  id           String         @id @default(cuid())
+  userId       String
+  title        String
+  reminderTime DateTime
+  status       ReminderStatus @default(PENDING)
+  createdAt    DateTime       @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, status])
+}
+
+// ==========================================================
+// CALENDAR
+// ==========================================================
+
+model CalendarEvent {
+  id          String   @id @default(cuid())
+  userId      String
+  title       String
+  description String?  @db.Text
+  startTime   DateTime
+  endTime     DateTime
+  location    String?
+  reminder    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, startTime])
+}
+
+// ==========================================================
+// NOTES
+// ==========================================================
+
+model Note {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  content   String   @db.Text
+  pinned    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// ==========================================================
+// MEMORY
+// ==========================================================
+
+model Memory {
+  id         String   @id @default(cuid())
+  userId     String
+  content    String   @db.Text
+  category   String   @default("general")
+  importance Int      @default(1) // 1-5
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// ==========================================================
+// DOCUMENTS
+// ==========================================================
+
+model Document {
+  id         String   @id @default(cuid())
+  userId     String
+  fileName   String
+  fileType   String
+  fileSize   Int
+  storageUrl String
+  extractedText String? @db.Text
+  summary    String?  @db.Text
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// ==========================================================
+// FOCUS MODE
+// ==========================================================
+
+model FocusSession {
+  id          String    @id @default(cuid())
+  userId      String
+  taskLabel   String?
+  durationMin Int
+  startedAt   DateTime  @default(now())
+  endedAt     DateTime?
+  completed   Boolean   @default(false)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// ==========================================================
+// AUTOMATIONS
+// ==========================================================
+
+model Automation {
+  id          String   @id @default(cuid())
+  userId      String
+  name        String
+  trigger     String // e.g. "task.created", "reminder.due", "note.created"
+  action      String // e.g. "ai.summarize", "notify.user", "ai.extractTasks"
+  enabled     Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  user User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  runs AutomationRun[]
+
+  @@index([userId])
+}
+
+model AutomationRun {
+  id           String   @id @default(cuid())
+  automationId String
+  status       String // success | failed
+  detail       String?  @db.Text
+  runAt        DateTime @default(now())
+
+  automation Automation @relation(fields: [automationId], references: [id], onDelete: Cascade)
+
+  @@index([automationId])
+}
